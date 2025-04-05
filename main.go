@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -57,6 +58,25 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Short URL: %s\n", shortURL)
 }
 
-func main() {
+func redirectToLongURL(w http.ResponseWriter, r *http.Request) {
+	shortURL := r.URL.Path[1:] //extracts the path from request URL
+	var url URL
+	result := db.First(&url, "short_url = ?", shortURL)
+	if result.Error != nil {
+		http.NotFound(w, r)
+		return
+	}
+	http.Redirect(w, r, url.LongURL, http.StatusFound)
+}
 
+func main() {
+	//setup the handlers
+	http.HandleFunc("/create", createShortURL)
+	http.HandleFunc("/", redirectToLongURL)
+
+	//start the server
+	fmt.Println("Server is running on http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+
+	//check the result
 }
